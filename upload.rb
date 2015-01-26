@@ -56,10 +56,12 @@ end
 def search_project(query)
   # perform an HTTP GET
   begin
-    request = Net::HTTP::Get.new("/api/v1/projects/#{UNFUDDLE_SETTINGS[:project_id]}/search.json?query=#{query}&filter=tickets")
-    # request = Net::HTTP::Get.new("/api/v1/account/search.json?query=#{query}&filter=tickets")
+    if !UNFUDDLE_SETTINGS[:project_id].nil?
+      request = Net::HTTP::Get.new("/api/v1/projects/#{UNFUDDLE_SETTINGS[:project_id]}/search.json?query=#{query}&filter=tickets")
+    else
+      request = Net::HTTP::Get.new("/api/v1/account/search.json?query=#{query}&filter=tickets")
+    end
     request.basic_auth UNFUDDLE_SETTINGS[:username], UNFUDDLE_SETTINGS[:password]
-
     response = $http.request(request)
     if response.code == "200"
       beautify_s(response.body, "Summary")
@@ -135,10 +137,12 @@ end
 
 def beautify_s(output, title)
   json_out = JSON.parse(output)
-  rows = []
+  tickets = Array.new
   json_out.each do |m|
-    puts [m['title']]
+    ['type', 'description', 'total_count', 'status', 'updated_at'].each { |k| m.delete k }
+    tickets.push(m)
   end
+  puts tickets.to_json
   # table = Terminal::Table.new :rows => rows, :headings => ['Summary'], :title => title
   # puts table
 end
@@ -198,6 +202,52 @@ def create_ticket(project_id, summary, description, milestone, priority, compone
 	end
 end
 
+def update_ticket_status(project_id, ticket_id, resolved)
+  begin
+    request = Net::HTTP::Put.new("/api/v1/projects/#{project_id}/tickets/#{ticket_id}", 
+                    {'Content-type' => 'application/xml'})
+    request.basic_auth UNFUDDLE_SETTINGS[:username], UNFUDDLE_SETTINGS[:password]
+    if(resolved.eql? "1")
+      request.body = "<ticket><status>resolved</status><resolution>fixed</resolution></ticket>"
+    else
+      request.body = "<ticket><status>wip</status></ticket>"
+    end
+    response = $http.request(request)
+    if response.code == "200"
+      puts "Ticket Created: #{response['Location']}"
+    else
+      # hmmm...we must have done something wrong
+      puts "HTTP Status Code: #{response.body}."
+    end
+  rescue => e
+    # do something smart
+    puts e
+  end
+end
+
+def add_time_entry(project_id, ticket_id, hour)
+  begin
+    request = Net::HTTP::Post.new("/api/v1/projects/#{project_id}/tickets/#{ticket_id}/time_entries", 
+                    {'Content-type' => 'application/xml'})
+    request.basic_auth UNFUDDLE_SETTINGS[:username], UNFUDDLE_SETTINGS[:password]
+    request.body = "<time-entry>
+        <hours type='float'>#{hour}</hours>
+        <description>work done</description>
+        <date type='date'>2015-01-26</date>
+        </time-entry>"
+    response = $http.request(request)
+    if response.code == "201"
+      puts "Ticket Created: #{response['Location']}"
+    else
+      # hmmm...we must have done something wrong
+      puts "HTTP Status Code: #{response.body}."
+    end
+  rescue => e
+    # do something smart
+    puts e
+  end
+end
+
 def create_tickets(csv_file)
 	if csv_file.nil? or !File.exists? csv_file
 		puts 'no file found'
@@ -240,6 +290,10 @@ elsif ARGV[0] == '-t'
   create_tickets(ARGV[1])
 elsif ARGV[0] == '-f'
   get_custom_field_values
+elsif ARGV[0] == '-u'
+  update_ticket_status(ARGV[1], ARGV[2], ARGV[3])
+elsif ARGV[0] == '-a'
+  add_time_entry(ARGV[1], ARGV[2], ARGV[3])
 else
   search_project ARGV[0]
 end
