@@ -11,6 +11,8 @@ options:
 	-s <project id> to get the list of severities for project
 	-v <project id> to get the list of versions for project
 	-f <project id> to get the list of custom field values for project
+	-u <project id> <ticket id> <resolved 1/0> <commit_message> to update the status fo the ticket
+	-a <project id> <ticket id> <hour> to add a time entry in the ticket specified
 
 creating tickets:
 
