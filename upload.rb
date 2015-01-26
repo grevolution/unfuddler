@@ -230,10 +230,14 @@ def add_time_entry(project_id, ticket_id, hour)
     request = Net::HTTP::Post.new("/api/v1/projects/#{project_id}/tickets/#{ticket_id}/time_entries", 
                     {'Content-type' => 'application/xml'})
     request.basic_auth UNFUDDLE_SETTINGS[:username], UNFUDDLE_SETTINGS[:password]
+    
+    date = Date.parse(Time.now.to_s)
+    date.strftime("%Y-%m-%d")
+
     request.body = "<time-entry>
         <hours type='float'>#{hour}</hours>
         <description>work done</description>
-        <date type='date'>2015-01-26</date>
+        <date type='date'>#{date}</date>
         </time-entry>"
     response = $http.request(request)
     if response.code == "201"
