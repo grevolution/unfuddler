@@ -202,13 +202,17 @@ def create_ticket(project_id, summary, description, milestone, priority, compone
 	end
 end
 
-def update_ticket_status(project_id, ticket_id, resolved)
+def update_ticket_status(project_id, ticket_id, resolved, commit_message)
   begin
     request = Net::HTTP::Put.new("/api/v1/projects/#{project_id}/tickets/#{ticket_id}", 
                     {'Content-type' => 'application/xml'})
     request.basic_auth UNFUDDLE_SETTINGS[:username], UNFUDDLE_SETTINGS[:password]
     if(resolved.eql? "1")
-      request.body = "<ticket><status>resolved</status><resolution>fixed</resolution></ticket>"
+      request.body = "<ticket><status>resolved</status><resolution>fixed</resolution>"
+      if(!commit_message.nil?)
+        request.body << "<resolution-description>commit hash : #{commit_message}</resolution-description>"
+      end
+      request.body << "</ticket>"
     else
       request.body = "<ticket><status>wip</status></ticket>"
     end
@@ -295,7 +299,7 @@ elsif ARGV[0] == '-t'
 elsif ARGV[0] == '-f'
   get_custom_field_values
 elsif ARGV[0] == '-u'
-  update_ticket_status(ARGV[1], ARGV[2], ARGV[3])
+  update_ticket_status(ARGV[1], ARGV[2], ARGV[3], ARGV[4])
 elsif ARGV[0] == '-a'
   add_time_entry(ARGV[1], ARGV[2], ARGV[3])
 else
