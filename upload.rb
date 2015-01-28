@@ -23,7 +23,7 @@ require 'net/https'
 require 'json'
 begin
   require 'terminal-table'
-rescue
+rescue LoadError
   puts "terminal-table not found"
 end
 
