@@ -21,7 +21,11 @@
 require 'csv'
 require 'net/https'
 require 'json'
-require 'terminal-table'
+begin
+  require 'terminal-table'
+rescue
+  puts "terminal-table not found"
+end
 
 UNFUDDLE_SETTINGS = {
   #-----------------------------
