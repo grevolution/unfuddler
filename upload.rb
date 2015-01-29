@@ -233,7 +233,7 @@ def update_ticket_status(project_id, ticket_id, resolved, commit_message)
   end
 end
 
-def add_time_entry(project_id, ticket_id, hour)
+def add_time_entry(project_id, ticket_id, hour, message)
   begin
     request = Net::HTTP::Post.new("/api/v1/projects/#{project_id}/tickets/#{ticket_id}/time_entries", 
                     {'Content-type' => 'application/xml'})
@@ -243,10 +243,15 @@ def add_time_entry(project_id, ticket_id, hour)
     date.strftime("%Y-%m-%d")
 
     request.body = "<time-entry>
-        <hours type='float'>#{hour}</hours>
-        <description>work done</description>
-        <date type='date'>#{date}</date>
-        </time-entry>"
+        <hours type='float'>#{hour}</hours>"
+    if(!message.nil?)
+      request.body << "<description>#{message}</description>"
+    else
+      request.body << "<description>work done</description>"
+    end
+    request.body << "<date type='date'>#{date}</date>"
+    request.body << "</time-entry>"
+
     response = $http.request(request)
     if response.code == "201"
       puts "Ticket Created: #{response['Location']}"
@@ -305,7 +310,7 @@ elsif ARGV[0] == '-f'
 elsif ARGV[0] == '-u'
   update_ticket_status(ARGV[1], ARGV[2], ARGV[3], ARGV[4])
 elsif ARGV[0] == '-a'
-  add_time_entry(ARGV[1], ARGV[2], ARGV[3])
+  add_time_entry(ARGV[1], ARGV[2], ARGV[3], ARGV[4])
 else
   search_project ARGV[0]
 end
